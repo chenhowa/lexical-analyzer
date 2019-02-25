@@ -1,5 +1,6 @@
 
-
+import { Parser, ParseTree } from "parser/parser";
+import { RegexParser } from "regex/regex-parser";
 
 interface Regex {
     set(regex: string): void;
@@ -8,13 +9,33 @@ interface Regex {
 
 
 class ConcreteRegex implements Regex {
-    set(regex: string) {
 
+    regex: string = "";
+
+    constructor() {
+    
+    }
+
+
+    set(regex: string) {
+        this.regex = regex;
     }
 
     emit_normalized_regex(): string {
-        return "";
+        let parser: Parser<string> = new RegexParser();
+        parser.parse(this.regex.split(''));
+        let tree: ParseTree<string> | string = parser.get_result();
+
+        if(is_parse_tree(tree)) {
+            return tree.as_string();
+        } else {
+            return tree;
+        }
     }
+}
+
+function is_parse_tree<T>(tree: ParseTree<T> | string): tree is ParseTree<T> {
+    return (<ParseTree<T>>tree).as_string !== undefined;
 }
 
 

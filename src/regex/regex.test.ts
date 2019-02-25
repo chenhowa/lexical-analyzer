@@ -22,7 +22,7 @@ describe("Emits correct regex sequence from string shorthand", () => {
         regex.set('$');
         expect_emits(regex, '$');
     });
-
+/*
     test('simple character strings', () => {
         regex.set('1a2b3c$');
         expect_emits(regex, '1a2b3c$');
@@ -79,7 +79,7 @@ describe("Emits correct regex sequence from string shorthand", () => {
 
         regex.set('a(b|c)*');
         expect_emits(regex, 'a((b|c))*');
-    });
+    });*/
 });
 
 function expect_emits(regex: Regex, expected: string) {
