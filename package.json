@@ -1,0 +1,19 @@
+{
+  "name": "lexical-analyzer",
+  "version": "0.0.1",
+  "description": "Generates lexical analyzer by using a set of regular expressions that specify the language",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chenhowa/lexical-analyzer.git"
+  },
+  "author": "Howard Chen",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/chenhowa/lexical-analyzer/issues"
+  },
+  "homepage": "https://github.com/chenhowa/lexical-analyzer#readme"
+}
