@@ -4,7 +4,7 @@
   "description": "Generates lexical analyzer by using a set of regular expressions that specify the language",
   "main": "index.js",
   "scripts": {
-    "test": "test"
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -15,5 +15,13 @@
   "bugs": {
     "url": "https://github.com/chenhowa/lexical-analyzer/issues"
   },
-  "homepage": "https://github.com/chenhowa/lexical-analyzer#readme"
+  "homepage": "https://github.com/chenhowa/lexical-analyzer#readme",
+  "devDependencies": {
+    "@types/jest": "^24.0.6",
+    "jest": "^24.1.0",
+    "ts-jest": "^24.0.0"
+  },
+  "dependencies": {
+    "typescript": "^3.3.3333"
+  }
 }
