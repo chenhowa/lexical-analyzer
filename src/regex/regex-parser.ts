@@ -110,10 +110,29 @@ class RegexParser implements Parser<string>{
         if (this._paren_expr()) {
             const save = this.current_index;
 
-            if(!this._parse_char("*")) {
+            if(!this._char("*")) {
                 this.current_index = save;
 
-                if(!this._parse_char("?")) {
+                if(!this._char("?")) {
+                    this.current_index = save;
+                }
+            }
+
+            if(!this._concat_remainder()) {
+                this.current_index = save;
+            }
+            
+            return true;
+        }
+
+        this.current_index = save;
+        if(this._unary_range()) {
+            const save = this.current_index;
+
+            if(!this._char("*")) {
+                this.current_index = save;
+
+                if(!this._char("?")) {
                     this.current_index = save;
                 }
             }
@@ -125,18 +144,16 @@ class RegexParser implements Parser<string>{
             return true;
         }
         
-        
-        return false;
-        
+        return false;  
     }
 
     _unary_expr(): boolean {
         if(this._parse_term()) {
             const save = this.current_index;
-            if(!this._parse_char("*")) {
+            if(!this._char("*")) {
                 this.current_index = save;
 
-                if(!this._parse_char("?")) {
+                if(!this._char("?")) {
                     this.current_index = save;
                 }
             }
@@ -145,6 +162,55 @@ class RegexParser implements Parser<string>{
         } else {
             return false;
         }
+    }
+
+    _unary_range(): boolean {
+        return this._char("[") && this._range_expr() && this._char("]");
+    }
+
+    _range_expr(): boolean {
+        return this._range_neg() && this._range_term() && this._range_remainder();
+    }
+
+    _range_neg(): boolean {
+        const save = this.current_index;
+        if(!this._char("^")) {
+            this.current_index = save;
+        }
+
+        return true;
+    }
+
+    _range_term(): boolean {
+        const save = this.current_index;
+        if(this._parse_term()) {
+            const save = this.current_index;
+            if(this._char("-")) {
+                if(!this._parse_term()) {
+                    this.current_index = save;
+                }
+            } else {
+                this.current_index = save;
+            }
+            
+            return true;
+        }
+        
+        this.current_index = save;
+        if(this._char("(") && this._range_expr() && this._char(")")) {
+            return true;
+        }
+
+        return false;
+    }
+
+    _range_remainder(): boolean {
+        const save = this.current_index;
+        if(!(this._range_neg() && this._range_term() && this._range_remainder())) {
+            this.current_index = save;
+        }
+
+        return true;
     }
 
     // parse concat remainder OR empty string
@@ -164,7 +230,7 @@ class RegexParser implements Parser<string>{
     // parse union remainder OR empty string
     _union_remainder(): boolean {
         const save = this.current_index;
-        if(! ( this._parse_char("|") && this._expression() ) ) {
+        if(! ( this._char("|") && this._expression() ) ) {
             this.current_index = save;
         }
         return true;
@@ -183,9 +249,9 @@ class RegexParser implements Parser<string>{
     }
 
     _paren_expr(): boolean {
-        let result = this._parse_char("(") 
+        let result = this._char("(") 
         result = result && this._expression();
-        result = result && this._parse_char(")");
+        result = result && this._char(")");
         
         return result;
     }
@@ -306,7 +372,7 @@ class RegexParser implements Parser<string>{
      * @description Matches a single character to the input.
      * @param terminal_char String of length 1
      */
-    _parse_char(terminal_char: string): boolean {
+    _char(terminal_char: string): boolean {
         if(terminal_char.length !== 1) {
             throw new Error("Invalid terminal char had length " + terminal_char.length.toString());
         }

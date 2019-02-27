@@ -122,6 +122,52 @@ describe('Correctly parses sequences of regex operations', () => {
     });
 });
 
+describe("Correctly parses ranges", () => {
+    let parser: RegexParser = new RegexParser();
+
+    beforeEach(() => {
+        parser = new RegexParser();
+    });
+
+    test("single character ranges", () => {
+        expect(parser.parse("[a]".split(''))).toBe(true);
+        expect(parser.parse("[$]".split(''))).toBe(true);
+        expect(parser.parse("[/s]".split(''))).toBe(true);
+    });
+
+    test("single ranges", () => {
+        expect(parser.parse("[a-Z]".split(''))).toBe(true);
+        expect(parser.parse("[$-Q]".split(''))).toBe(true);
+        expect(parser.parse("[0-9]".split(''))).toBe(true);
+    });
+
+    test("negate single ranges", () => {
+        expect(parser.parse("[^a-Z]".split(''))).toBe(true);
+        expect(parser.parse("[^$]".split(''))).toBe(true);
+        expect(parser.parse("[^0]".split(''))).toBe(true);
+    });
+
+    test("(nested) parenthesized single range", () => {
+        expect(parser.parse("[(a-Z)]".split(''))).toBe(true);
+        expect(parser.parse("[($)]".split(''))).toBe(true);
+        expect(parser.parse("[(($))]".split(''))).toBe(true);
+    });
+
+    test("multiple single ranges", () => {
+        expect(parser.parse("[ab]".split(''))).toBe(true);
+        expect(parser.parse("[a-z1]".split(''))).toBe(true);
+        expect(parser.parse("[1a-z]".split(''))).toBe(true);
+        expect(parser.parse("[1-9a-z]".split(''))).toBe(true);
+    });
+
+    test("multiple ranges and range operations", () => {
+        expect(parser.parse("[^ab]".split(''))).toBe(true);
+        expect(parser.parse("[^a(b-c0)]".split(''))).toBe(true);
+        expect(parser.parse("[^(ab^(c1-3(^5-9)))]".split(''))).toBe(true);
+    });
+});
+
+
 describe("Rejects invalid regex", () => {
     let parser: RegexParser = new RegexParser();
 
@@ -139,6 +185,10 @@ describe("Rejects invalid regex", () => {
         expect(parser.parse("?".split(''))).toBe(false);
         expect(parser.parse("a|".split(''))).toBe(false);
         expect(parser.parse("|a".split(''))).toBe(false);
+    });
+
+    test("empty ranges", () => {
+        expect(parser.parse("[]".split(''))).toBe(false);
     });
 
 });
