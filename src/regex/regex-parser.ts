@@ -34,7 +34,12 @@ class RegexParser implements Parser<string>{
         this.tree = new RegexParseTree();
         this.chars = chars;
 
-        this.success = this._expression();
+        const success = this._expression();
+        if(success && this._input_exhausted()) {
+            this.success = true;
+        } else {
+            this.success = false;
+        }
 
         return this.success;
     }
@@ -50,7 +55,7 @@ class RegexParser implements Parser<string>{
 
         for(let i = 0; i < tests.length; i++) {
             let parsers = tests[i];
-            if(parsers() && this._input_exhausted()) {
+            if(parsers()) {
                 return true;
             } else {
                 this.current_index = save;
@@ -156,7 +161,9 @@ class RegexParser implements Parser<string>{
     }
 
     _paren_expr(): boolean {
-        let result = this._parse_char("(") && this._expression() && this._parse_char(")");
+        let result = this._parse_char("(") 
+        result = result && this._expression();
+        result = result && this._parse_char(")");
         
         return result;
     }
