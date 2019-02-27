@@ -34,17 +34,18 @@ class RegexParser implements Parser<string>{
         this.tree = new RegexParseTree();
         this.chars = chars;
 
-        this.success = this._parse_expression();
+        this.success = this._expression();
 
         return this.success;
     }
 
-    _parse_expression(): boolean {
+    _expression(): boolean {
         const save = this.current_index;
 
         let tests: (() => boolean)[] = [
             
-            this._parse_union_concat.bind(this), // C union E | C
+            this._concat_union.bind(this), // C union E | C
+            this._paren_expr_union.bind(this)  // (E) union E | (E)
         ];
 
         for(let i = 0; i < tests.length; i++) {
@@ -59,79 +60,63 @@ class RegexParser implements Parser<string>{
         return false;
     }
 
-    _parse_union_concat(): boolean {
-        console.log('union concat');
-        if(this._parse_concat_expression()) {
-            const save = this.current_index;
-
-            if(!this._parse_remaining_union()) {
-                this.current_index = save; // if parsing remaining union failed, forget about it.
-            }
-
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    _parse_remaining_union(): boolean {
-        return this._parse_char("|") && this._parse_expression();
-    }
-
-    _parse_concat_expression(): boolean {
-        console.log('concat expression');
-        const save = this.current_index;
-        if(this._parse_concat_wildcard()) {
-            return true;
-        }
-        this.current_index = save;
-        if(this._parse_concat_at_least()) {
-            return true;
-        }
-
-
-        return false;
-
-    }
-
-    _parse_concat_wildcard(): boolean {
-        console.log('concat wildcard');
-        if(this._parse_wildcard_expression()) {
-            const save = this.current_index;
-
-            if(!this._parse_remaining_concat()) {
+    _concat_union(): boolean {
+        console.log('concat union');
+        if(this._concat_expr()) {
+            let save = this.current_index;
+            if(!this._union_remainder()) {
                 this.current_index = save;
             }
-
             return true;
-
         } else {
             return false;
         }
     }
 
-    _parse_remaining_concat(): boolean {
-        console.log('remaining concat');
-        return this._parse_concat_expression();
-    }
-
-    _parse_wildcard_expression(): boolean {
-        console.log('wildcard expression');
+    _concat_expr(): boolean {
+        console.log('concat_expr');
         const save = this.current_index;
-        if(this._parse_wildcard_term()) {
-            return true;
+        let tests: (() => boolean)[] = [
+            this._unary_concat.bind(this), // i.e. a*C
+            this._paren_expr_concat.bind(this)
+        ];
+
+        for(let i = 0; i < tests.length; i++) {
+            let parsers = tests[i];
+            if(parsers()) {
+                console.log("matched concat expr");
+                return true;
+            } else {
+                this.current_index = save;
+            }
         }
 
         return false;
     }
 
-    _parse_wildcard_term(): boolean {
-        console.log('wildcard term');
+    _unary_concat(): boolean {
+        console.log('unary concat');
+        if(this._unary_expr()) {
+            const save = this.current_index;
+            if(!this._concat_remainder()) {
+                this.current_index = save;
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    _unary_expr(): boolean {
+        console.log('unary_expr');
         if(this._parse_term()) {
             const save = this.current_index;
-
             if(!this._parse_char("*")) {
                 this.current_index = save;
+
+                if(!this._parse_char("?")) {
+                    this.current_index = save;
+                }
             }
 
             return true;
@@ -140,44 +125,52 @@ class RegexParser implements Parser<string>{
         }
     }
 
-    _parse_concat_at_least(): boolean {
-        console.log("concat at least");
-        if(this._parse_at_least_expression()) {
-            const save = this.current_index;
-            if(!this._parse_remaining_concat()) {
-                this.current_index = save;
-            }
-
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    _parse_at_least_expression(): boolean {
-        console.log("at least expr");
+    // parse concat remainder OR empty string
+    _concat_remainder(): boolean {
+        console.log('concat_remainder');
         const save = this.current_index;
-        if(this._parse_at_least_term()) {
-            return true;
+        if(!this._concat_expr()) {
+            this.current_index = save;
         }
 
-        return false;
+        return true;
     }
 
-    _parse_at_least_term(): boolean {
-        console.log("at least term");
-        if(this._parse_term()) {
-            const save = this.current_index;
+    _paren_expr_concat(): boolean {
+        console.log('paren_expr_concat');
+        return this._paren_expr() && this._concat_remainder();
+    }
 
-            if(!this._parse_char("?")) {
+    // parse union remainder OR empty string
+    _union_remainder(): boolean {
+        console.log('union remainder');
+        const save = this.current_index;
+        if(! ( this._parse_char("|") && this._expression() ) ) {
+            this.current_index = save;
+        }
+        return true;
+    }
+
+    _paren_expr_union(): boolean {
+        console.log('paren_expr_union');
+        if(this._paren_expr()) {
+            let save = this.current_index;
+            if(!this._union_remainder()) {
                 this.current_index = save;
             }
-
             return true;
         } else {
-            console.log("RETURNING FALSE");
             return false;
         }
+    }
+
+    _paren_expr(): boolean {
+        console.log('paren_expr');
+        let result = this._parse_char("(") && this._expression() && this._parse_char(")");
+        if(result) {
+            console.log('matched paren expr');
+        }
+        return result;
     }
 
     _input_exhausted(): boolean {
@@ -202,12 +195,15 @@ class RegexParser implements Parser<string>{
         for(let i = 0; i < tests.length; i++) {
             let parsers = tests[i];
             if(parsers()) {
+                console.log('matched term');
                 return true;
             } else {
                 // If parsing failed, restore.
                 this.current_index = save;
             }
         }
+
+        console.log("failed to match any term");
 
         return false;
     }

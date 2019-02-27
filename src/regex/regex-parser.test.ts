@@ -2,7 +2,7 @@ import "jest";
 
 import { RegexParser } from "regex/regex-parser";
 
-/*
+
 describe("Correctly parses simple terminal regex tokens", () => {
     let parser: RegexParser = new RegexParser();
 
@@ -19,7 +19,7 @@ describe("Correctly parses simple terminal regex tokens", () => {
         expect( parser.parse("9".split(''))).toBe(true);
         expect( parser.parse("0".split(''))).toBe(true);
     });
-
+    
     test("single space", () => {
         expect( parser.parse(" ".split(''))).toBe(true);
         expect( parser.parse("\t".split(''))).toBe(true);
@@ -46,7 +46,7 @@ describe("Correctly parses simple terminal regex tokens", () => {
         expect( parser.parse('/('.split(''))).toBe(true);
         expect( parser.parse('/]'.split(''))).toBe(true);
     });
-});*/
+});
 
 describe("Correctly parses single regex operations", () => {
     let parser: RegexParser = new RegexParser();
@@ -55,12 +55,11 @@ describe("Correctly parses single regex operations", () => {
         parser = new RegexParser();
     });
 
-    /*test("union", () => {
+    test("union", () => {
         expect(parser.parse("a|b".split(''))).toBe(true);
         expect(parser.parse("a|b|c|d".split(''))).toBe(true);
     });
 
-    
     test("concatenation", () => {
         expect(parser.parse("ab".split(''))).toBe(true);
         expect(parser.parse("ab12@".split(''))).toBe(true);
@@ -69,12 +68,34 @@ describe("Correctly parses single regex operations", () => {
     test("wildcard", () => {
         expect(parser.parse("a*".split(''))).toBe(true);
         expect(parser.parse("a*b*c*".split(''))).toBe(true);
-    });*/
+    });
 
+    
     test("at least one", () => {
         expect(parser.parse("a?".split(''))).toBe(true);
         expect(parser.parse("a?b?c?d?".split(''))).toBe(true);
     });
+});
+
+describe("Rejects invalid regex", () => {
+    let parser: RegexParser = new RegexParser();
+
+    beforeEach(() => {
+        parser = new RegexParser();
+    });
+
+    test("sequence of wildcard and at least", () => {
+        expect(parser.parse("a*?".split(''))).toBe(false);
+        expect(parser.parse("a?*".split(''))).toBe(false);
+    });
+
+    test("operations with not enough operands", () => {
+        expect(parser.parse("*".split(''))).toBe(false);
+        expect(parser.parse("?".split(''))).toBe(false);
+        expect(parser.parse("a|".split(''))).toBe(false);
+        expect(parser.parse("|a".split(''))).toBe(false);
+    });
+
 });
 
 
