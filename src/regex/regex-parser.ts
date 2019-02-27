@@ -61,7 +61,6 @@ class RegexParser implements Parser<string>{
     }
 
     _concat_union(): boolean {
-        console.log('concat union');
         if(this._concat_expr()) {
             let save = this.current_index;
             if(!this._union_remainder()) {
@@ -74,7 +73,6 @@ class RegexParser implements Parser<string>{
     }
 
     _concat_expr(): boolean {
-        console.log('concat_expr');
         const save = this.current_index;
         let tests: (() => boolean)[] = [
             this._unary_concat.bind(this), // i.e. a*C
@@ -84,7 +82,6 @@ class RegexParser implements Parser<string>{
         for(let i = 0; i < tests.length; i++) {
             let parsers = tests[i];
             if(parsers()) {
-                console.log("matched concat expr");
                 return true;
             } else {
                 this.current_index = save;
@@ -95,7 +92,6 @@ class RegexParser implements Parser<string>{
     }
 
     _unary_concat(): boolean {
-        console.log('unary concat');
         if(this._unary_expr()) {
             const save = this.current_index;
             if(!this._concat_remainder()) {
@@ -108,7 +104,6 @@ class RegexParser implements Parser<string>{
     }
 
     _unary_expr(): boolean {
-        console.log('unary_expr');
         if(this._parse_term()) {
             const save = this.current_index;
             if(!this._parse_char("*")) {
@@ -127,7 +122,6 @@ class RegexParser implements Parser<string>{
 
     // parse concat remainder OR empty string
     _concat_remainder(): boolean {
-        console.log('concat_remainder');
         const save = this.current_index;
         if(!this._concat_expr()) {
             this.current_index = save;
@@ -137,13 +131,11 @@ class RegexParser implements Parser<string>{
     }
 
     _paren_expr_concat(): boolean {
-        console.log('paren_expr_concat');
         return this._paren_expr() && this._concat_remainder();
     }
 
     // parse union remainder OR empty string
     _union_remainder(): boolean {
-        console.log('union remainder');
         const save = this.current_index;
         if(! ( this._parse_char("|") && this._expression() ) ) {
             this.current_index = save;
@@ -152,7 +144,6 @@ class RegexParser implements Parser<string>{
     }
 
     _paren_expr_union(): boolean {
-        console.log('paren_expr_union');
         if(this._paren_expr()) {
             let save = this.current_index;
             if(!this._union_remainder()) {
@@ -165,11 +156,8 @@ class RegexParser implements Parser<string>{
     }
 
     _paren_expr(): boolean {
-        console.log('paren_expr');
         let result = this._parse_char("(") && this._expression() && this._parse_char(")");
-        if(result) {
-            console.log('matched paren expr');
-        }
+        
         return result;
     }
 
@@ -181,7 +169,6 @@ class RegexParser implements Parser<string>{
      * @description Parses a single term of the regular expression.
      */
     _parse_term(): boolean {
-        console.log("Parsing term at token " + this._current_char() + " at index " + this.current_index + " with chars " + this.chars.toString());
         const save = this.current_index;
         let tests: (() => boolean)[] = [
             this._parse_term_alpha.bind(this),
@@ -195,7 +182,6 @@ class RegexParser implements Parser<string>{
         for(let i = 0; i < tests.length; i++) {
             let parsers = tests[i];
             if(parsers()) {
-                console.log('matched term');
                 return true;
             } else {
                 // If parsing failed, restore.
@@ -203,7 +189,6 @@ class RegexParser implements Parser<string>{
             }
         }
 
-        console.log("failed to match any term");
 
         return false;
     }

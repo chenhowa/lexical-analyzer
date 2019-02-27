@@ -75,6 +75,52 @@ describe("Correctly parses single regex operations", () => {
         expect(parser.parse("a?".split(''))).toBe(true);
         expect(parser.parse("a?b?c?d?".split(''))).toBe(true);
     });
+
+    test.only("(nested) parentheses", () => {
+        expect(parser.parse("(a)".split(''))).toBe(true);
+        expect(parser.parse("(ab)".split(''))).toBe(true);
+        expect(parser.parse("(abc)".split(''))).toBe(true);
+        expect(parser.parse("((a))".split(''))).toBe(true);
+    });
+});
+
+describe('Correctly parses sequences of regex operations', () => {
+    let parser: RegexParser = new RegexParser();
+
+    beforeEach(() => {
+        parser = new RegexParser();
+    });
+
+    test("union, concat", () => {
+        expect(parser.parse("ab|c".split(''))).toBe(true);
+        expect(parser.parse("a|bc".split(''))).toBe(true);
+    });
+
+    test("concat, wildcard, at least", () => { 
+        expect(parser.parse("a?b".split(''))).toBe(true);
+        expect(parser.parse("a*b".split(''))).toBe(true);
+        expect(parser.parse("ab?".split(''))).toBe(true);
+        expect(parser.parse("ab*".split(''))).toBe(true);
+    });
+
+    test("union, wildcard, at least", () => {
+        expect(parser.parse("a?|b".split(''))).toBe(true);
+        expect(parser.parse("a*|b".split(''))).toBe(true);
+        expect(parser.parse("a|b?".split(''))).toBe(true);
+        expect(parser.parse("a|b*".split(''))).toBe(true);
+    });
+
+    /*
+    test("sequences with parentheses and all operations" , () => {
+        expect(parser.parse("(a?|bc)d|e*fgh?".split(''))).toBe(true);
+        expect(parser.parse("a?|bc(d|e*fgh)?".split(''))).toBe(true);
+        expect(parser.parse("(a?|bc)(d|e*fgh)?".split(''))).toBe(true);
+
+    });*/
+
+    test("sequences using all operations", () => {
+        expect(parser.parse("a?|bcd|e*fgh?".split(''))).toBe(true);
+    });
 });
 
 describe("Rejects invalid regex", () => {

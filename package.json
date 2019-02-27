@@ -19,7 +19,9 @@
   "devDependencies": {
     "@types/jest": "^24.0.6",
     "jest": "^24.1.0",
-    "ts-jest": "^24.0.0"
+    "ts-jest": "^24.0.0",
+    "ts-node": "^8.0.2",
+    "tsconfig-paths": "^3.8.0"
   },
   "dependencies": {
     "@types/voca": "^1.4.0",
