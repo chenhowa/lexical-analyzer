@@ -114,6 +114,7 @@ describe('Correctly parses sequences of regex operations', () => {
         expect(parser.parse("(a?|bc)d|e*fgh?".split(''))).toBe(true);
         expect(parser.parse("a?|bc(d|e*fgh)?".split(''))).toBe(true);
         expect(parser.parse("(a?|bc)(d|e*fgh)?".split(''))).toBe(true);
+        expect(parser.parse("(a?|bc)(d|e*(fgh))".split(''))).toBe(true);
     });
 
     test("sequences using all operations", () => {

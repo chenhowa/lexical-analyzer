@@ -97,15 +97,37 @@ class RegexParser implements Parser<string>{
     }
 
     _unary_concat(): boolean {
+        const save = this.current_index;
         if(this._unary_expr()) {
             const save = this.current_index;
             if(!this._concat_remainder()) {
                 this.current_index = save;
             }
             return true;
-        } else {
-            return false;
         }
+        
+        this.current_index = save;
+        if (this._paren_expr()) {
+            const save = this.current_index;
+
+            if(!this._parse_char("*")) {
+                this.current_index = save;
+
+                if(!this._parse_char("?")) {
+                    this.current_index = save;
+                }
+            }
+
+            if(!this._concat_remainder()) {
+                this.current_index = save;
+            }
+            
+            return true;
+        }
+        
+        
+        return false;
+        
     }
 
     _unary_expr(): boolean {
