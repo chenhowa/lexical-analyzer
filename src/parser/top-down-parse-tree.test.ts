@@ -78,8 +78,26 @@ describe('Removing from a tree', () => {
         }
     });
 
-    test('removals do not result in orphan nodes', () => {
-        expect(true).toBe(false);
+    test('single node removal', () => {
+        let iter = tree.get_root_iter();
+        if(!iter) {
+            expect(true).toBe(false);
+        } else {
+            iter.child(0);
+            iter.remove();
+            expect(tree.as_string()).toBe("(1(3)(4(5)))");
+        }
+    });
+
+    test('subtree removal', () => {
+        let iter = tree.get_root_iter();
+        if(!iter) {
+            expect(true).toBe(false);
+        } else {
+            iter.child(0);
+            iter.remove_subtree();
+            expect(tree.as_string()).toBe("(1(4(5)))");
+        }
     });
 });
 
@@ -102,6 +120,13 @@ describe('Updating a tree', () => {
     });
 
     test('updates work correctly', () => {
-
+        let iter = tree.get_root_iter();
+        if(!iter) {
+            expect(true).toBe(false);
+        } else {
+            iter.child(0);
+            iter.set(20);
+            expect(tree.as_string()).toBe("(1(20(3))(4(5)))");
+        }
     });
 });

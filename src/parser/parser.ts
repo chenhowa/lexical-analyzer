@@ -15,6 +15,10 @@ interface ParseTree<T> {
     get_root_iter(): TreeIterator<T> | undefined;
 }
 
+function isParseTree<T, U>(data: ParseTree<T> | U): data is ParseTree<T> {
+    return (<ParseTree<T>>data).get_root_iter !== undefined;
+}
+
 interface TreeIterator<T> {
     num_children(): number;
     add_before(data: T | TreeNode<T>, child_index?: number): TreeIterator<T>;
@@ -27,6 +31,15 @@ interface TreeIterator<T> {
     has_child(index: number): boolean;
     clone(): TreeIterator<T>;
     get(): T;
+    set(data: T): void;
+    remove(): void;
+    remove_subtree(): void;
+}
+
+interface ParseResult<T> {
+    success: boolean;
+    node: TreeNode<T>;
+    message: string;
 }
 
 interface TreeNode<T> {
@@ -35,8 +48,12 @@ interface TreeNode<T> {
     children: TreeNode<T>[]; 
 }
 
-function isTreeNode<T>(data: T | TreeNode<T>): data is TreeNode<T> {
+function isTreeNode<T, U>(data: U | TreeNode<T>): data is TreeNode<T> {
     return ( <TreeNode<T>>data).children !== undefined;
 }
 
-export { Parser, ParseTree, ErrorMessage, TreeIterator, TreeNode, isTreeNode };
+export { 
+    Parser, ParseTree, ErrorMessage, 
+    TreeIterator, TreeNode, isTreeNode, 
+    isParseTree, ParseResult
+};

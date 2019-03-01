@@ -130,6 +130,63 @@ class ParseTreeIterator<T> implements TreeIterator<T> {
     get(): T {
         return this.node.data;
     }
+
+    set(data: T): void {
+        this.node.data = data;
+    }
+
+    /**
+     * @description Removes this node, and insert them at position in parent's children.
+     */
+    remove(): void {
+        if(!this.node.parent) {
+            throw new Error("Attempted to remove root");
+        }
+
+        const parent = this.node.parent;
+        let children = this.node.children;
+
+        // Destroy references to this node.
+        this.node.parent = undefined;
+        this.node.children = [];
+        for(let i = 0; i < children.length; i++) {
+            children[i].parent = parent;
+        }
+
+        // Replace this node with this node's children in the parent's children.
+        parent.children.splice(parent.children.indexOf(this.node), 1, ...children);
+
+        this.node = parent; // Update iterator to point at parent now.
+    }
+
+    /**
+     * @description Remove the subtree starting at this iterator's node.
+     */
+    remove_subtree(): void {
+        if(!this.node.parent) {
+            throw new Error("Attempted to remove entire tree");
+        }
+
+        let parent = this.node.parent;
+        this._remove_subtree(this.node);
+        this.node = parent;
+    }
+
+    _remove_subtree(node: TreeNode<T>) {
+        if(node.parent) {
+            // Remove parent's reference to child.
+            const parent = node.parent;
+            parent.children.splice(parent.children.indexOf(node), 1);
+        }
+
+        node.parent = undefined;
+        const children = node.children;
+        node.children = [];
+        for(let i = 0; i < children.length; i++) {
+            this._remove_subtree(children[i]);
+        }
+    }
+
 }
 
 class ParseTreeNode<T> implements TreeNode<T> {
