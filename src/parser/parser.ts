@@ -49,7 +49,7 @@ interface TreeNode<T> {
 }
 
 function isTreeNode<T, U>(data: U | TreeNode<T>): data is TreeNode<T> {
-    return ( <TreeNode<T>>data).children !== undefined;
+    return data && ( <TreeNode<T>>data).children !== undefined;
 }
 
 export { 

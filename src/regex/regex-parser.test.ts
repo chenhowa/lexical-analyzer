@@ -1,6 +1,7 @@
 import "jest";
 
 import { RegexParser } from "regex/regex-parser";
+import { isParseTree, ParseTree } from "parser/parser";
 
 
 describe("Correctly parses simple terminal regex tokens", () => {
@@ -10,9 +11,12 @@ describe("Correctly parses simple terminal regex tokens", () => {
         parser = new RegexParser();
     });
     
-    test("single character", () => {
+    test.only("single character", () => {
         expect( parser.parse("a".split('')) ).toBe(true);
+        expect_parse_result(parser.get_result(), "(a)");
+
         expect( parser.parse("z".split('')) ).toBe(true);
+        expect_parse_result(parser.get_result(), "(z)")
     });
 
     test("single digit", () => {
@@ -194,3 +198,10 @@ describe("Rejects invalid regex", () => {
 });
 
 
+function expect_parse_result<T, U>(data: ParseTree<T> | U, expected: string) {
+    if(isParseTree(data)) {
+        expect(data.as_string()).toEqual(expected);
+    } else {
+        expect(true).toBe(false);
+    }
+}
