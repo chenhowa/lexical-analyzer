@@ -36,6 +36,13 @@ interface TreeIterator<T> {
     remove_subtree(): void;
 }
 
+interface Token<T, U> {
+    kind: T,
+    data: U,
+    as_string(): string
+    keep_when_pruning(): boolean;
+}
+
 interface ParseResult<T> {
     success: boolean;
     node: TreeNode<T>;
@@ -55,5 +62,5 @@ function isTreeNode<T, U>(data: U | TreeNode<T>): data is TreeNode<T> {
 export { 
     Parser, ParseTree, ErrorMessage, 
     TreeIterator, TreeNode, isTreeNode, 
-    isParseTree, ParseResult
+    isParseTree, ParseResult, Token
 };

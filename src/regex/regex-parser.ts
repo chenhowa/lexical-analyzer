@@ -42,7 +42,33 @@ class RegexParser implements Parser<string>{
             this.success = false;
         }
 
+        this._prune_tree();
+
         return this.success;
+    }
+
+    _prune_tree(): void {
+        let iter = this.tree.get_root_iter();
+        if(iter) {
+            for(let i = 0; i < iter.num_children(); i++) {
+                let child = iter.clone();
+                child.child(i);
+                this._prune_tree_helper(child);
+            }
+        }
+    }
+
+    _prune_tree_helper(current: TreeIterator<string>): void {
+        if(current.num_children() === 1) {
+            current.remove(); // this updates to point at parent.
+            this._prune_tree_helper(current);
+        } else {
+            for(let i = 0; i < current.num_children(); i++) {
+                let child = current.clone();
+                child.child(i);
+                this._prune_tree_helper(child);
+            }
+        }
     }
 
     _expression(parent?: TreeIterator<string>): boolean {
