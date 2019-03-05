@@ -11,44 +11,62 @@ describe("Correctly parses simple terminal regex tokens", () => {
         parser = new RegexParser();
     });
     
-    test.only("single character", () => {
+    test("single character", () => {
         expect( parser.parse("a".split('')) ).toBe(true);
-        expect_parse_result(parser.get_result(), "(a)");
+        expect_parse_result(parser.get_result(), "(E(a))");
 
         expect( parser.parse("z".split('')) ).toBe(true);
-        expect_parse_result(parser.get_result(), "(z)")
+        expect_parse_result(parser.get_result(), "(E(z))")
     });
 
     test("single digit", () => {
         expect( parser.parse("9".split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(9))");
         expect( parser.parse("0".split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(0))");
+
     });
     
     test("single space", () => {
         expect( parser.parse(" ".split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E( ))");
         expect( parser.parse("\t".split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(\t))");
         expect( parser.parse("\n".split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(\n))");
         expect( parser.parse("\r".split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(\r))");
     });
 
     test("special characters", () => {
         expect( parser.parse("@".split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(@))");
         expect( parser.parse('#'.split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(#))");
     });
 
     test("punctuation", () => {
         expect( parser.parse(":".split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(:))");
         expect( parser.parse('.'.split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(.))");
     });
 
     test("escaped tokens", () => {
         expect( parser.parse("//".split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(//))");
         expect( parser.parse('/a'.split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(/a))");
         expect( parser.parse("/d".split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(/d))");
         expect( parser.parse('/A'.split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(/A))");
         expect( parser.parse('/s'.split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(/s))");
         expect( parser.parse('/('.split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(/())");
         expect( parser.parse('/]'.split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(/]))");
     });
 });
 

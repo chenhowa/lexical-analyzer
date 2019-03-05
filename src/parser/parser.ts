@@ -1,9 +1,9 @@
 
 type ErrorMessage = string;
 
-interface Parser<T> {
+interface Parser<T, U> {
     parse(token: T[]): boolean;
-    get_result(): ParseTree<T> | ErrorMessage;
+    get_result(): ParseTree<U> | ErrorMessage;
 }
 
 

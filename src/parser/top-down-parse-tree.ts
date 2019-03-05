@@ -1,7 +1,23 @@
 import { ParseTree, TreeIterator, TreeNode, isTreeNode } from "parser/parser";
 
+interface Stringable {
+    as_string(): string;
+}
 
-class TopDownParseTree<T> implements ParseTree<T> {
+function isStringable(val: any): val is Stringable {
+    return val && (<Stringable>val).as_string !== undefined;
+} 
+
+interface ToString {
+    toString(): string;
+}
+
+function isToString(val: any): val is ToString {
+    return val && (<ToString>val).toString !== undefined;
+}
+
+
+class TopDownParseTree<T extends Stringable | ToString > implements ParseTree<T> {
     root?: TreeNode<T>;
     constructor(data?: T) {
         if(data) {
@@ -33,7 +49,8 @@ class TopDownParseTree<T> implements ParseTree<T> {
 
     _as_string(node: TreeNode<T>, result: string[]): void {
         result.push('(');
-        result.push(node.data.toString());
+        const data = isStringable(node.data) ? node.data.as_string() : node.data.toString();
+        result.push(data);
 
         for(let i = 0; i < node.children.length; i++) {
             this._as_string(node.children[i], result);
