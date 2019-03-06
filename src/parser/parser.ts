@@ -40,7 +40,8 @@ interface Token<T, U> {
     kind: T,
     data: U,
     as_string(): string
-    keep_when_pruning(): boolean;
+    keep_if_no_children(): boolean;
+    keep_if_one_child(): boolean;
 }
 
 interface ParseResult<T> {

@@ -6,6 +6,8 @@ import { isAlpha, isDigit } from "voca";
 
 enum RegexTokenKind {
     Expression = "expression",
+    Union = "U",
+    Concat = "C",
     ConcatUnion = "concat_union",
     ConcatExpr = "concat_expr",
     UnaryConcat = "unary_concat",
@@ -22,6 +24,8 @@ enum RegexTokenKind {
     ParenExpr = "paren_expr",
     Term = "term",
     TermChars = "term_alpha",
+    Wildcard = "wildcard",
+    AtLeast = "at_least",
 }
 
 class RegexToken implements Token<RegexTokenKind, string> {
@@ -39,8 +43,16 @@ class RegexToken implements Token<RegexTokenKind, string> {
         return this.kind;
     }
 
-    keep_when_pruning(): boolean {
+    keep_if_no_children(): boolean {
         return this.kind === RegexTokenKind.TermChars;
+    }
+
+    keep_if_one_child(): boolean {
+        switch (this.kind) {
+            case RegexTokenKind.Wildcard: return true;
+            case RegexTokenKind.AtLeast: return true;
+            default: return false;
+        }
     }
 } 
 
@@ -108,9 +120,11 @@ class RegexParser implements Parser< string, Token<RegexTokenKind, string> >{
 
         // Prune if 1 or 0 children, depending on conditions.
         if(current.num_children() === 1) {
-            current.remove(); // this updates to point at parent.
+            if(!current.get().keep_if_one_child()) {
+                current.remove(); // this updates to point at parent.
+            }
         } else if (current.num_children() === 0) {
-            if(!current.get().keep_when_pruning()) {
+            if(!current.get().keep_if_no_children()) {
                 current.remove();
             }
         }
@@ -149,7 +163,7 @@ class RegexParser implements Parser< string, Token<RegexTokenKind, string> >{
     }
 
     _concat_union(parent: TreeIterator<Token<RegexTokenKind, string>>): boolean {
-        let self = parent.add_after(new RegexToken(RegexTokenKind.ConcatUnion, ""));
+        let self = parent.add_after(new RegexToken(RegexTokenKind.Union, "U"));
 
         if(this._concat_expr(self)) {
             let save = this.current_index;
@@ -184,7 +198,7 @@ class RegexParser implements Parser< string, Token<RegexTokenKind, string> >{
     }
 
     _unary_concat(parent: TreeIterator<Token<RegexTokenKind, string>>): boolean {
-        let self = parent.add_after(new RegexToken(RegexTokenKind.UnaryConcat, ""));
+        let self = parent.add_after(new RegexToken(RegexTokenKind.Concat, "C"));
 
         const save = this.current_index;
         if(this._unary_expr(self)) {
@@ -199,13 +213,7 @@ class RegexParser implements Parser< string, Token<RegexTokenKind, string> >{
         if (this._paren_expr(self)) {
             const save = this.current_index;
 
-            if(!this._char("*", self)) {
-                this.current_index = save;
-
-                if(!this._char("?", self)) {
-                    this.current_index = save;
-                }
-            }
+            this._optional_wildcard_at_least(self);
 
             if(!this._concat_remainder(self)) {
                 this.current_index = save;
@@ -218,13 +226,7 @@ class RegexParser implements Parser< string, Token<RegexTokenKind, string> >{
         if(this._unary_range(self)) {
             const save = this.current_index;
 
-            if(!this._char("*", self)) {
-                this.current_index = save;
-
-                if(!this._char("?", self)) {
-                    this.current_index = save;
-                }
-            }
+            this._optional_wildcard_at_least(self);
 
             if(!this._concat_remainder(self)) {
                 this.current_index = save;
@@ -238,16 +240,9 @@ class RegexParser implements Parser< string, Token<RegexTokenKind, string> >{
     }
 
     _unary_expr(parent: TreeIterator<Token<RegexTokenKind, string>>): boolean {
-        let self = parent.add_after(new RegexToken(RegexTokenKind.UnaryExpr, ""));
+        let self = parent.add_after(new RegexToken(RegexTokenKind.UnaryExpr, "UE"));
         if(this._term(self)) {
-            const save = this.current_index;
-            if(!this._char("*", self)) {
-                this.current_index = save;
-
-                if(!this._char("?", self)) {
-                    this.current_index = save;
-                }
-            }
+            this._optional_wildcard_at_least(self);
 
             return true;
         } else {
@@ -256,9 +251,24 @@ class RegexParser implements Parser< string, Token<RegexTokenKind, string> >{
         }
     }
 
+    _optional_wildcard_at_least(iter: TreeIterator<Token<RegexTokenKind, string>>): void {
+        const save = this.current_index;
+        if(!this._char("*", iter, false)) {
+            this.current_index = save;
+
+            if(!this._char("?", iter, false)) {
+                this.current_index = save;
+            } else {
+                iter.set(new RegexToken(RegexTokenKind.AtLeast, "AL"));
+            }
+        } else {
+            iter.set(new RegexToken(RegexTokenKind.Wildcard, "W"));
+        }
+    }
+
     _unary_range(parent: TreeIterator<Token<RegexTokenKind, string>>): boolean {
         let self = parent.add_after(new RegexToken(RegexTokenKind.UnaryRange, ""));
-        let result = this._char("[", self) && this._range_expr(self) && this._char("]", self);
+        let result = this._char("[", self, true) && this._range_expr(self) && this._char("]", self, true);
 
         if(!result) {
             self.remove_subtree();
@@ -279,7 +289,7 @@ class RegexParser implements Parser< string, Token<RegexTokenKind, string> >{
     _range_neg(parent: TreeIterator<Token<RegexTokenKind, string>>): boolean {
         let self = parent.add_after(new RegexToken(RegexTokenKind.RangeNeg, ""));
         const save = this.current_index;
-        if(!this._char("^", self)) {
+        if(!this._char("^", self, true)) {
             this.current_index = save;
         }
 
@@ -291,7 +301,7 @@ class RegexParser implements Parser< string, Token<RegexTokenKind, string> >{
         const save = this.current_index;
         if(this._term(self)) {
             const save = this.current_index;
-            if(this._char("-", self)) {
+            if(this._char("-", self, true)) {
                 if(!this._term(self)) {
                     this.current_index = save;
                 }
@@ -303,7 +313,7 @@ class RegexParser implements Parser< string, Token<RegexTokenKind, string> >{
         }
         
         this.current_index = save;
-        if(this._char("(", self) && this._range_expr(self) && this._char(")", self)) {
+        if(this._char("(", self, true) && this._range_expr(self) && this._char(")", self, true)) {
             return true;
         }
 
@@ -345,7 +355,7 @@ class RegexParser implements Parser< string, Token<RegexTokenKind, string> >{
     _union_remainder(parent: TreeIterator<Token<RegexTokenKind, string>>): boolean {
         const self = parent.add_after(new RegexToken(RegexTokenKind.UnionRemainder, ""));
         const save = this.current_index;
-        if(! ( this._char("|", self) && this._expression(self) ) ) {
+        if(! ( this._char("|", self, false) && this._expression(self) ) ) {
             this.current_index = save;
         }
         return true;
@@ -367,9 +377,9 @@ class RegexParser implements Parser< string, Token<RegexTokenKind, string> >{
 
     _paren_expr(parent: TreeIterator<Token<RegexTokenKind, string>>): boolean {
         const self = parent.add_after(new RegexToken(RegexTokenKind.ParenExpr, ""));
-        let result = this._char("(", self) 
+        let result = this._char("(", self, false) 
         result = result && this._expression(self);
-        result = result && this._char(")", self);
+        result = result && this._char(")", self, false);
 
         if(!result) {
             self.remove_subtree();
@@ -520,7 +530,7 @@ class RegexParser implements Parser< string, Token<RegexTokenKind, string> >{
      * @description Matches a single character to the input.
      * @param terminal_char String of length 1
      */
-    _char(terminal_char: string, parent: TreeIterator<Token<RegexTokenKind, string>>): boolean {
+    _char(terminal_char: string, parent: TreeIterator<Token<RegexTokenKind, string>>, add_to_tree: boolean): boolean {
         if(terminal_char.length !== 1) {
             throw new Error("Invalid terminal char had length " + terminal_char.length.toString());
         }
@@ -528,7 +538,7 @@ class RegexParser implements Parser< string, Token<RegexTokenKind, string> >{
         const success = terminal_char === this._current_char();
         this.current_index += 1;
 
-        if(success) {
+        if(success && add_to_tree) {
             parent.add_after(new RegexToken(RegexTokenKind.TermChars, terminal_char));
         }
 
