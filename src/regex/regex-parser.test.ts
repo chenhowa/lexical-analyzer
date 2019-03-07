@@ -180,42 +180,58 @@ describe("Correctly parses ranges", () => {
 
     test("single character ranges", () => {
         expect(parser.parse("[a]".split(''))).toBe(true);
-        expect_parse_result(parser.get_result(), "(E(R(a)))");
+        expect_parse_result(parser.get_result(), "(E(OO(a)))");
         expect(parser.parse("[$]".split(''))).toBe(true);
-        expect_parse_result(parser.get_result(), "(E(R($)))");
+        expect_parse_result(parser.get_result(), "(E(OO($)))");
         expect(parser.parse("[/s]".split(''))).toBe(true);
-        expect_parse_result(parser.get_result(), "(E(R(/s)))");
+        expect_parse_result(parser.get_result(), "(E(OO(/s)))");
     });
 
     test("single ranges", () => {
         expect(parser.parse("[a-Z]".split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(OO(R(a)(Z))))");
         expect(parser.parse("[$-Q]".split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(OO(R($)(Q))))");
         expect(parser.parse("[0-9]".split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(OO(R(0)(9))))");
     });
 
     test("negate single ranges", () => {
         expect(parser.parse("[^a-Z]".split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(OO(N(R(a)(Z)))))");
         expect(parser.parse("[^$]".split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(OO(N($))))");
         expect(parser.parse("[^0]".split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(OO(N(0))))");
     });
 
     test("(nested) parenthesized single range", () => {
         expect(parser.parse("[(a-Z)]".split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(OO(R(a)(Z))))");
         expect(parser.parse("[($)]".split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(OO($)))");
         expect(parser.parse("[(($))]".split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(OO($)))");
     });
 
     test("multiple single ranges", () => {
         expect(parser.parse("[ab]".split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(OO(a)(b)))");
         expect(parser.parse("[a-z1]".split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(OO(R(a)(z))(1)))");
         expect(parser.parse("[1a-z]".split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(OO(1)(R(a)(z))))");
         expect(parser.parse("[1-9a-z]".split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(OO(R(1)(9))(R(a)(z))))");
     });
 
     test("multiple ranges and range operations", () => {
         expect(parser.parse("[^ab]".split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(OO(N(a))(b)))");
         expect(parser.parse("[^a(b-c0)]".split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(OO(N(a)) ))");
         expect(parser.parse("[^(ab^(c1-3(^5-9)))]".split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(OO(a)(b)))");
     });
 });
 

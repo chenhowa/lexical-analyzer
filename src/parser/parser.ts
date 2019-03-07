@@ -42,6 +42,7 @@ interface Token<T, U> {
     as_string(): string
     keep_if_no_children(): boolean;
     keep_if_one_child(): boolean;
+    keep_if_multiple_children(): boolean;
 }
 
 interface ParseResult<T> {

@@ -5,16 +5,18 @@ import { isAlpha, isDigit } from "voca";
 
 
 enum RegexTokenKind {
-    Expression = "expression",
+    Expression = "E",
     Union = "U",
     Concat = "C",
+    OneOf = "OO",
+    Range = "R",
     ConcatUnion = "concat_union",
     ConcatExpr = "concat_expr",
     UnaryConcat = "unary_concat",
     UnaryExpr = "unary_expr",
     UnaryRange = "unary_range",
-    RangeExpr = "range_expr",
-    RangeNeg = "range_neg",
+    RangeExpr = "RE",
+    RangeNeg = "N",
     RangeTerm = "range_term",
     RangeRemainder = "range_remainder",
     ConcatRemainder = "concat_remainder",
@@ -23,7 +25,7 @@ enum RegexTokenKind {
     ParenExprUnion = "paren_expr_union",
     ParenExpr = "paren_expr",
     Term = "term",
-    TermChars = "term_alpha",
+    TermChars = "term_chars",
     Wildcard = "wildcard",
     AtLeast = "at_least",
 }
@@ -51,7 +53,16 @@ class RegexToken implements Token<RegexTokenKind, string> {
         switch (this.kind) {
             case RegexTokenKind.Wildcard: return true;
             case RegexTokenKind.AtLeast: return true;
+            case RegexTokenKind.OneOf: return true;
+            case RegexTokenKind.RangeNeg: return true;
             default: return false;
+        }
+    }
+
+    keep_if_multiple_children(): boolean {
+        switch(this.kind) {
+            case RegexTokenKind.RangeExpr: return false;
+            default: return true;
         }
     }
 } 
@@ -95,6 +106,8 @@ class RegexParser implements Parser< string, Token<RegexTokenKind, string> >{
         }
 
         this._prune_tree();
+        this._prune_tree(); // have to prune twice to prune correctly. Not sure why it doesn't work
+                            // correctly the first time.
 
         return this.success;
     }
@@ -125,6 +138,10 @@ class RegexParser implements Parser< string, Token<RegexTokenKind, string> >{
             }
         } else if (current.num_children() === 0) {
             if(!current.get().keep_if_no_children()) {
+                current.remove();
+            }
+        } else {
+            if(!current.get().keep_if_multiple_children()) {
                 current.remove();
             }
         }
@@ -267,8 +284,8 @@ class RegexParser implements Parser< string, Token<RegexTokenKind, string> >{
     }
 
     _unary_range(parent: TreeIterator<Token<RegexTokenKind, string>>): boolean {
-        let self = parent.add_after(new RegexToken(RegexTokenKind.UnaryRange, ""));
-        let result = this._char("[", self, true) && this._range_expr(self) && this._char("]", self, true);
+        let self = parent.add_after(new RegexToken(RegexTokenKind.OneOf, ""));
+        let result = this._char("[", self, false) && this._range_expr(self) && this._char("]", self, false);
 
         if(!result) {
             self.remove_subtree();
@@ -279,7 +296,15 @@ class RegexParser implements Parser< string, Token<RegexTokenKind, string> >{
 
     _range_expr(parent: TreeIterator<Token<RegexTokenKind, string>>): boolean {
         let self = parent.add_after(new RegexToken(RegexTokenKind.RangeExpr, ""));
-        let result = this._range_neg(self) && this._range_term(self) && this._range_remainder(self);
+        const save = this.current_index;
+        if(!this._range_neg(self)) {
+            this.current_index = save;
+        } else {
+            // we found a negation.
+            self.set(new RegexToken(RegexTokenKind.RangeNeg, ""));
+        }
+
+        let result = this._range_term(self) && this._range_remainder(self);
         if(!result) {
             self.remove_subtree();
         }
@@ -287,21 +312,21 @@ class RegexParser implements Parser< string, Token<RegexTokenKind, string> >{
     }
 
     _range_neg(parent: TreeIterator<Token<RegexTokenKind, string>>): boolean {
-        let self = parent.add_after(new RegexToken(RegexTokenKind.RangeNeg, ""));
         const save = this.current_index;
-        if(!this._char("^", self, true)) {
+        if(!this._char("^", parent, false)) {
             this.current_index = save;
+            return false;
         }
 
         return true;
     }
 
     _range_term(parent: TreeIterator<Token<RegexTokenKind, string>>): boolean {
-        const self = parent.add_after(new RegexToken(RegexTokenKind.RangeTerm, ""));
+        const self = parent.add_after(new RegexToken(RegexTokenKind.Range, ""));
         const save = this.current_index;
         if(this._term(self)) {
             const save = this.current_index;
-            if(this._char("-", self, true)) {
+            if(this._char("-", self, false)) {
                 if(!this._term(self)) {
                     this.current_index = save;
                 }
@@ -313,7 +338,7 @@ class RegexParser implements Parser< string, Token<RegexTokenKind, string> >{
         }
         
         this.current_index = save;
-        if(this._char("(", self, true) && this._range_expr(self) && this._char(")", self, true)) {
+        if(this._char("(", self, false) && this._range_expr(self) && this._char(")", self, false)) {
             return true;
         }
 
@@ -324,7 +349,14 @@ class RegexParser implements Parser< string, Token<RegexTokenKind, string> >{
     _range_remainder(parent: TreeIterator<Token<RegexTokenKind, string>>): boolean {
         const self = parent.add_after(new RegexToken(RegexTokenKind.RangeRemainder, ""));
         const save = this.current_index;
-        if(!(this._range_neg(self) && this._range_term(self) && this._range_remainder(self))) {
+
+        if(!this._range_neg(self)) {
+            this.current_index = save;
+        } else {
+            self.set(new RegexToken(RegexTokenKind.RangeNeg, ""));
+        }
+
+        if(!(this._range_term(self) && this._range_remainder(self))) {
             this.current_index = save;
         }
 
