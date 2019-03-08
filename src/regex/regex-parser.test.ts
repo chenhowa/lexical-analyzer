@@ -205,15 +205,6 @@ describe("Correctly parses ranges", () => {
         expect_parse_result(parser.get_result(), "(E(OO(N(0))))");
     });
 
-    test("(nested) parenthesized single range", () => {
-        expect(parser.parse("[(a-Z)]".split(''))).toBe(true);
-        expect_parse_result(parser.get_result(), "(E(OO(R(a)(Z))))");
-        expect(parser.parse("[($)]".split(''))).toBe(true);
-        expect_parse_result(parser.get_result(), "(E(OO($)))");
-        expect(parser.parse("[(($))]".split(''))).toBe(true);
-        expect_parse_result(parser.get_result(), "(E(OO($)))");
-    });
-
     test("multiple single ranges", () => {
         expect(parser.parse("[ab]".split(''))).toBe(true);
         expect_parse_result(parser.get_result(), "(E(OO(a)(b)))");
@@ -227,11 +218,13 @@ describe("Correctly parses ranges", () => {
 
     test("multiple ranges and range operations", () => {
         expect(parser.parse("[^ab]".split(''))).toBe(true);
-        //expect_parse_result(parser.get_result(), "(E(OO(N(a))(b)))");
-        expect(parser.parse("[^a(b-c0)]".split(''))).toBe(true);
-        //expect_parse_result(parser.get_result(), "(E(OO(N(a)) ))");
-        expect(parser.parse("[^(ab^(c1-3(^5-9)))]".split(''))).toBe(true);
-        //expect_parse_result(parser.get_result(), "(E(OO(a)(b)))");
+        expect_parse_result(parser.get_result(), "(E(OO(N(a)(b))))");
+        expect(parser.parse("[^ad-g]".split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(OO(N(a)(R(d)(g)))))");
+        expect(parser.parse("[a-b0e-f]".split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(OO(R(a)(b))(0)(R(e)(f))))");
+        expect(parser.parse("[ab^cd]".split(''))).toBe(true);
+        expect_parse_result(parser.get_result(), "(E(OO(a)(b)(N(c)(d))))");
     });
 });
 
@@ -258,6 +251,11 @@ describe("Rejects invalid regex", () => {
     test("empty ranges", () => {
         expect(parser.parse("[]".split(''))).toBe(false);
     });
+
+    test("invalid ranges", () => {
+        expect(parser.parse("[(a-Z)]".split(''))).toBe(false);
+        expect(parser.parse("[^(ab^(c1-3(^5-9)))]".split(''))).toBe(false);
+    })
 
 });
 
