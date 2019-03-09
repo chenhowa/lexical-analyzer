@@ -14,8 +14,9 @@ enum RegexTokenKind {
     RangeNeg = "N",
     Wildcard = "W",
     AtLeast = "AL",
+    TermChars = "term_chars",
 
-
+    // These aren't used for code gen and should be thrown out.
     ConcatUnion = "concat_union",
     ConcatExpr = "concat_expr",
     UnaryConcat = "unary_concat",
@@ -29,7 +30,6 @@ enum RegexTokenKind {
     ParenExprUnion = "paren_expr_union",
     ParenExpr = "paren_expr",
     Term = "term",
-    TermChars = "term_chars",
 }
 
 class RegexToken implements Token<RegexTokenKind, string> {
@@ -573,4 +573,4 @@ class RegexParser implements Parser< string, Token<RegexTokenKind, string> >{
 
 
 
-export { RegexParser };
+export { RegexParser, RegexTokenKind };
