@@ -1,6 +1,6 @@
 
-import { Parser, ParseTree } from "parser/parser";
-import { RegexParser } from "regex/regex-parser";
+import { Parser, ParseTree, Token } from "parser/parser";
+import { RegexParser, RegexTokenKind } from "regex/regex-parser";
 
 interface Regex {
     set(regex: string): void;
@@ -22,9 +22,9 @@ class ConcreteRegex implements Regex {
     }
 
     emit_normalized_regex(): string {
-        let parser: Parser<string> = new RegexParser();
+        let parser: Parser<string, Token<RegexTokenKind, string>> = new RegexParser();
         parser.parse(this.regex.split(''));
-        let tree: ParseTree<string> | string = parser.get_result();
+        let tree: ParseTree<Token<RegexTokenKind, string>> | string = parser.get_result();
 
         if(is_parse_tree(tree)) {
             return tree.as_string();

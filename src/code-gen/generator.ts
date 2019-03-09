@@ -50,13 +50,24 @@ class RegexCodeGenerator implements Generator<RegexTokenKind> {
     }
 
     _union(iter: TreeIterator<Token<RegexTokenKind, string>>): NFA {
+        const child_nfas: NFA[] = this._generate_child_nfas(iter);
+
+        const nfa = this._union_helper(child_nfas);
+        
+        return nfa;
+    }
+
+    _generate_child_nfas(iter: TreeIterator<Token<RegexTokenKind, string>>): NFA[] {
         let child_nfas: NFA[] = [];
         for(let i = 0; i < iter.num_children(); i++) {
             let child = iter.clone();
             child.child(i);
             child_nfas.push( this._generate(child) );
         }
+        return child_nfas;
+    }
 
+    _union_helper(children: NFA[]): NFA {
         let union_transition: Map<string, number[]> = new Map();
         union_transition.set('EPSILON', []);
         let nfa: NFA = {
@@ -71,13 +82,15 @@ class RegexCodeGenerator implements Generator<RegexTokenKind> {
 
         // link to each child nfa through an epsilon
         let offset = 1;
-        for(let i = 0; i < child_nfas.length; i++) {
-            let converted = this._offset_nfa(child_nfas[i], offset);
+        for(let i = 0; i < children.length; i++) {
+            let converted = this._offset_nfa(children[i], offset);
             offset += converted.transitions.length; // each transition is for one state.
             nfa.accept_states = nfa.accept_states.concat(converted.accept_states);
             let epsilon_transitions = nfa.transitions[0].get('EPSILON');
             if(epsilon_transitions) {
                 nfa.transitions[0].set('EPSILON', epsilon_transitions.concat(converted.start_state));
+            } else {
+                nfa.transitions[0].set('EPSILON', [converted.start_state]);
             }
             nfa.transitions = nfa.transitions.concat(converted.transitions);
         }
@@ -86,7 +99,109 @@ class RegexCodeGenerator implements Generator<RegexTokenKind> {
     }
 
     _concat(iter: TreeIterator<Token<RegexTokenKind, string>>): NFA {
+        const child_nfas = this._generate_child_nfas(iter);
+        const nfa = this._concat_helper(child_nfas);
+        return nfa;
+    }
 
+    _concat_helper(children: NFA[]): NFA {
+        let offset = 0;
+        let converted_children: NFA[] = children.map((child) => {
+            let converted = this._offset_nfa(child, offset);
+            offset += converted.transitions.length;
+            return converted;
+        });
+
+        // Fuse the child nfas
+        let nfa: NFA = {
+            start_state: 0,     // Start at the first child.
+            accept_states: converted_children[converted_children.length - 1].accept_states, // it accepts only when the last nfa accepts.
+            transitions: [
+
+            ]
+        }
+        for(let i = 0; i < converted_children.length; i++) {
+            nfa.transitions = nfa.transitions.concat(converted_children[i].transitions);
+        }
+        // link the accept states of each child (except the last) each to the start states of the next child.
+        for(let child_index = 0; child_index < converted_children.length - 1; child_index++) {
+            let accept_states = converted_children[child_index].accept_states;
+            for(let state_index = 0; state_index < accept_states.length; state_index++) {
+                let accept_state_epsilon_transition = nfa.transitions[accept_states[state_index]].get("EPSILON");
+                if(accept_state_epsilon_transition) {
+                    accept_state_epsilon_transition.push(converted_children[child_index + 1].start_state);
+                    nfa.transitions[accept_states[state_index]].set("EPSILON", accept_state_epsilon_transition);
+                } else {
+                    nfa.transitions[accept_states[state_index]].set("EPSILON", [converted_children[child_index + 1].start_state]);
+                }
+            }
+        }
+
+        return nfa;
+    }
+
+    _wildcard(iter: TreeIterator<Token<RegexTokenKind, string>>): NFA {
+        const child_nfas = this._generate_child_nfas(iter);
+        const nfa = this._wildcard_helper(child_nfas[0]);
+        return nfa;
+    }
+
+    _wildcard_helper(child: NFA): NFA {
+        let offset = 1;
+        let converted: NFA = this._offset_nfa(child, offset);
+
+        // For each accept state of the converted nfa, set epsilon transition back to new start state.
+        for(let i = 0; i < converted.accept_states.length; i++) {
+            const accept_state = converted.accept_states[i] - offset;
+            let converted_epsilon_transition = converted.transitions[accept_state].get("EPSILON");
+            if(converted_epsilon_transition) {
+                converted_epsilon_transition.push(0);
+                converted.transitions[accept_state].set("EPSILON", converted_epsilon_transition);
+            } else {
+                converted.transitions[accept_state].set("EPSILON", [0]);
+            }
+        }
+        
+        // Append new start state, that is also accept state, that has epsilon-transition to 
+        // start state of child nfa.
+        let start_transition: Map<string, number[]> = new Map();
+        start_transition.set("EPSILON", [1]);
+        let nfa: NFA = {
+            start_state: 0,
+            accept_states: [0, ...converted.accept_states],
+            transitions: [
+                start_transition,
+                ...converted.transitions
+            ]
+        }
+
+        return nfa;
+    }
+
+    _optional(iter: TreeIterator<Token<RegexTokenKind, string>>): NFA {
+        const child_nfas = this._generate_child_nfas(iter);
+        const nfa = this._wildcard_helper(child_nfas[0]);
+        return nfa;
+    }
+
+    _optional_helper(child: NFA) {
+        let offset = 1;
+        let converted: NFA = this._offset_nfa(child, offset);
+        
+        // Append new start state, that is also accept state, that has epsilon-transition to 
+        // start state of child nfa.
+        let start_transition: Map<string, number[]> = new Map();
+        start_transition.set("EPSILON", [1]);
+        let nfa: NFA = {
+            start_state: 0,
+            accept_states: [0, ...converted.accept_states],
+            transitions: [
+                start_transition,
+                ...converted.transitions
+            ]
+        }
+
+        return nfa;
     }
 
     /**
@@ -148,3 +263,5 @@ class RegexCodeGenerator implements Generator<RegexTokenKind> {
  *      The above completely describes the NFA, giving the alphabet, the states, the accept states,
  *          the start state, and the transition function.
  */
+
+ export { RegexCodeGenerator };

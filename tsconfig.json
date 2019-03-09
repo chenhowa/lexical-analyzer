@@ -20,7 +20,8 @@
     
     "baseUrl": "./src",        
     "paths": {"lexical-analyzer/*": ["./*"]},              
-    "esModuleInterop": true      
+    "esModuleInterop": true,
+    "downlevelIteration": true,      
 
     
   }
