@@ -184,7 +184,7 @@ class RegexCodeGenerator implements Generator<RegexTokenKind> {
         return nfa;
     }
 
-    _optional_helper(child: NFA) {
+    _optional_helper(child: NFA): NFA {
         let offset = 1;
         let converted: NFA = this._offset_nfa(child, offset);
         

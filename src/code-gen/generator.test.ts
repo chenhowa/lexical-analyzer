@@ -71,14 +71,18 @@ describe("correctly generates nfa for basic terms and operations", () => {
         expect(nfa.accept_states).toEqual([0, 2]);
         let res: [string, number[]][][] = [
             [ ["EPSILON", [1] ]  ],  // state 0 transition accepts (no input read)
-            [ ["a", [2] ]],      // state 1 is just start of child
-            [  ]                // state 2 is just accept state of child. There is no transition back to the start.
+            [ ["a", [2] ]],      // State 1 is just start of child
+            [  ]                // State 2 is just accept state of child. 
+                                //      There is no transition back to the start since this is either 0 or 1
         ];
         expect(nfa_transitions_as_array(nfa.transitions)).toEqual(res);
     });
 
 });
 
+describe("correctly generates nfa from tree", () => {
+
+});
 
 function nfa_transitions_as_array(transitions: Map<string, number[]>[]): [string, number[]][][] {
     let stringed = transitions.map((transition) => {
