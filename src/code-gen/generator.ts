@@ -1,5 +1,5 @@
 import { ParseTree, Token, TreeIterator } from "parser/parser";
-import { RegexTokenKind } from "regex/regex-parser";
+import { RegexTokenKind, RegexToken } from "regex/regex-parser";
 
 
 interface NFA {
@@ -30,14 +30,60 @@ class RegexCodeGenerator implements Generator<RegexTokenKind> {
     }
 
     _generate(iter: TreeIterator<Token<RegexTokenKind, string> >): NFA {
-        // How do I generate a DFA from a tree representing the regex?
-        // a | b vs ab | c
-        // I mean, we're trying to generate a table, start states, and accept states.
-        // Each operator represents a state and transitions.
-        // For example, a union represents 2 epsilon transitions into new states.
-        // But really, we want to make small NFAs, and compose larger NFAs from the smaller ones.
-        // This implies that we aren't building the entire table from scratch, but that we CAN serialize the entire 
-        // table afterwards by pulling out the data from the nested NFAs.
+        let token = iter.get();
+        switch(token.kind) {
+            case RegexTokenKind.Expression: {
+
+            } break;
+            case RegexTokenKind.Union: {
+                return this._union(iter);
+            } break;
+            case RegexTokenKind.Concat: {
+                return this._concat(iter);
+            } break;
+            case RegexTokenKind.OneOf: {
+
+            } break;
+            case RegexTokenKind.Range: {
+
+            } break;
+            case RegexTokenKind.RangeExpr: {
+
+            } break;
+            case RegexTokenKind.RangeNeg: {
+
+            } break;
+            case RegexTokenKind.Wildcard: {
+                return this._wildcard(iter);
+            } break;
+            case RegexTokenKind.Optional: {
+                return this._optional(iter);
+            } break;
+            case RegexTokenKind.TermChars: {
+                if(token.data.length === 1) {
+                    return this._term(token.data);
+                } else {
+                    // Otherwise we have to process special character and generate NFA from that.
+                    return this._special_char_nfa(token.data);
+                }
+            } break;
+            default: {
+                throw new Error("Token of kind " + token.kind + " is not permitted here");
+            }
+        }
+
+        return {
+            start_state: 0,
+            accept_states: [
+                // should be accept states of the child nfas
+            ],
+            transitions: [
+
+            ]
+        };
+    }
+
+    _special_char_nfa(special: string): NFA {
         return {
             start_state: 0,
             accept_states: [
@@ -180,7 +226,7 @@ class RegexCodeGenerator implements Generator<RegexTokenKind> {
 
     _optional(iter: TreeIterator<Token<RegexTokenKind, string>>): NFA {
         const child_nfas = this._generate_child_nfas(iter);
-        const nfa = this._wildcard_helper(child_nfas[0]);
+        const nfa = this._optional_helper(child_nfas[0]);
         return nfa;
     }
 

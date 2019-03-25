@@ -13,7 +13,7 @@ enum RegexTokenKind {
     RangeExpr = "RE",
     RangeNeg = "N",
     Wildcard = "W",
-    AtLeast = "AL",
+    Optional = "AL",
     TermChars = "term_chars",
 
     // These aren't used for code gen and should be thrown out.
@@ -54,7 +54,7 @@ class RegexToken implements Token<RegexTokenKind, string> {
     keep_if_one_child(): boolean {
         switch (this.kind) {
             case RegexTokenKind.Wildcard: return true;
-            case RegexTokenKind.AtLeast: return true;
+            case RegexTokenKind.Optional: return true;
             case RegexTokenKind.OneOf: return true;
             case RegexTokenKind.RangeNeg: return true;
             default: return false;
@@ -278,7 +278,7 @@ class RegexParser implements Parser< string, Token<RegexTokenKind, string> >{
             if(!this._char("?", iter, false)) {
                 this.current_index = save;
             } else {
-                iter.set(new RegexToken(RegexTokenKind.AtLeast, ""));
+                iter.set(new RegexToken(RegexTokenKind.Optional, ""));
             }
         } else {
             iter.set(new RegexToken(RegexTokenKind.Wildcard, ""));
@@ -573,4 +573,4 @@ class RegexParser implements Parser< string, Token<RegexTokenKind, string> >{
 
 
 
-export { RegexParser, RegexTokenKind };
+export { RegexParser, RegexTokenKind, RegexToken };
